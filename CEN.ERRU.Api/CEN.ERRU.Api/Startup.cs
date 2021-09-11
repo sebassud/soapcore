@@ -1,4 +1,5 @@
 using CEN.ERRU.Api.Service;
+using Microsoft.AspNetCore.Authentication.Certificate;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -12,6 +13,7 @@ using SoapCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
 namespace CEN.ERRU.Api
@@ -36,6 +38,31 @@ namespace CEN.ERRU.Api
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "CEN.ERRU.Api", Version = "v1" });
             });
+
+            services.AddAuthentication(
+            CertificateAuthenticationDefaults.AuthenticationScheme)
+            .AddCertificate(options =>
+            {
+                options.RevocationMode = X509RevocationMode.NoCheck;
+                options.AllowedCertificateTypes = CertificateTypes.All;
+                options.Events = new CertificateAuthenticationEvents
+                {
+                    OnCertificateValidated = context =>
+                    {
+                        if (context.ClientCertificate.Thumbprint == "DEF55A8AF7211129CC7F11828083BF6B9A7E3928")
+                        {
+                            context.Success();
+                        }
+                        else
+                        {
+                            context.Fail("Niepoprawny certyfikat.");
+                        }
+
+
+                        return Task.CompletedTask;
+                    }
+                };
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -52,12 +79,14 @@ namespace CEN.ERRU.Api
 
             app.UseRouting();
 
+            app.UseCertificateForwarding();
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                endpoints.UseSoapEndpoint<IErruService>("/ErruService.svc", new SoapEncoderOptions(), SoapSerializer.XmlSerializer);
+                endpoints.UseSoapEndpoint<IErruService>("/ErruService.svc", new SoapEncoderOptions(), SoapSerializer.XmlSerializer).RequireAuthorization();
             });
         }
     }

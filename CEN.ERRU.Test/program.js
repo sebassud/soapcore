@@ -5,8 +5,15 @@ import { sleep, check } from 'k6';
 // Uruchom w terminalu wpisując: .\k6 run program.js
 
 export let options = {
-  vus: 100,
-  duration: '15s',
+  vus: 10,
+  duration: '5s',  
+  tlsAuth: [
+    {
+      domains: ['localhost'],
+      cert: open('./Certificates/RootCaClientTest.pem'),
+      key: open('./Certificates/RootCaClientTestKey.pem'),
+    },
+  ],
   thresholds: {
     http_req_duration: ['p(90)<200'],
   },
@@ -35,7 +42,7 @@ function soapReqBody (request) {
 
 export default function () {
     let res = http.post(
-        'https://localhost:44329/ErruService.svc',
+        'https://localhost:44510/ErruService.svc',
         soapReqBody(person),
         { headers: { 'Content-Type': 'text/xml' } },
       );

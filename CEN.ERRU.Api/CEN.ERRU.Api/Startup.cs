@@ -2,6 +2,7 @@ using CEN.ERRU.Api.Service;
 using Microsoft.AspNetCore.Authentication.Certificate;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -34,6 +35,8 @@ namespace CEN.ERRU.Api
             services.AddControllers();
             services.AddSoapCore();
             services.AddScoped<IErruService, ErruService>();
+            services.AddScoped<Contract.ERRU, BizTalkService>();
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "CEN.ERRU.Api", Version = "v1" });
@@ -49,7 +52,8 @@ namespace CEN.ERRU.Api
                 {
                     OnCertificateValidated = context =>
                     {
-                        if (context.ClientCertificate.Thumbprint == "DEF55A8AF7211129CC7F11828083BF6B9A7E3928")
+                        if (context.ClientCertificate.Thumbprint == "DEF55A8AF7211129CC7F11828083BF6B9A7E3928" ||
+                            context.ClientCertificate.Thumbprint == "0B894EEF9583083644CD2A9789DE41E522754C39")
                         {
                             context.Success();
                         }
@@ -86,7 +90,7 @@ namespace CEN.ERRU.Api
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                endpoints.UseSoapEndpoint<IErruService>("/ErruService.svc", new SoapEncoderOptions(), SoapSerializer.XmlSerializer).RequireAuthorization();
+                endpoints.UseSoapEndpoint<Contract.ERRU>("/ErruService.svc", new SoapEncoderOptions(), SoapSerializer.XmlSerializer).RequireAuthorization();
             });
         }
     }
